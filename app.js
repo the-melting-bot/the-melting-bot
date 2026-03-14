@@ -12,6 +12,48 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
 
 
 /* ----------------------------------------------------------------
+   0.5 LOADING SCREEN ANIMATION
+   ---------------------------------------------------------------- */
+
+(function initLoader() {
+  const loader  = document.getElementById('loader');
+  const bot     = document.getElementById('loaderBot');
+  if (!loader || !bot) return;
+
+  // Add loading class to body to pause hero animations
+  document.body.classList.add('loading');
+
+  if (prefersReducedMotion) {
+    // Skip animation, just remove immediately
+    loader.style.display = 'none';
+    document.body.classList.remove('loading');
+    return;
+  }
+
+  // Timeline:
+  // 0.0s - 0.8s : Bot fades in (CSS animation: loaderFadeIn, 0.2s delay + 0.6s)
+  // 0.5s - 1.3s : Drips draw in (CSS animation: loaderDripDraw)
+  // 1.4s        : Start melt animation
+  // 1.4s - 2.6s : Bot melts/dissolves (CSS animation: loaderMelt, 1.2s)
+  // 2.6s - 3.2s : Loader fades out (CSS transition: 0.6s)
+
+  setTimeout(() => {
+    bot.classList.add('melting');
+  }, 1400);
+
+  setTimeout(() => {
+    loader.classList.add('fade-out');
+    document.body.classList.remove('loading');
+  }, 2500);
+
+  // Remove loader from DOM after fade completes
+  setTimeout(() => {
+    loader.style.display = 'none';
+  }, 3200);
+})();
+
+
+/* ----------------------------------------------------------------
    1. CUSTOM CURSOR
    ---------------------------------------------------------------- */
 
@@ -43,7 +85,7 @@ if (cursor && cursorGlow) {
   animateGlow();
 
   // Hover state
-  const interactiveSelectors = 'a, button, [role="button"], .skill-tag, .glass-card, .contact-btn';
+  const interactiveSelectors = 'a, button, [role="button"], .skill-tag, .glass-card, .contact-btn, .tmb-badge';
   document.querySelectorAll(interactiveSelectors).forEach(el => {
     el.addEventListener('mouseenter', () => {
       cursor.classList.add('hovering');
