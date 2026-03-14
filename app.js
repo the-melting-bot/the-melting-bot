@@ -1,8 +1,15 @@
 /* ================================================================
-   THE MELTING BOT — App Logic
+   THE MELTING BOT — App Logic (Enhanced)
    ================================================================ */
 
 'use strict';
+
+/* ----------------------------------------------------------------
+   0. REDUCED MOTION CHECK
+   ---------------------------------------------------------------- */
+
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 
 /* ----------------------------------------------------------------
    1. CUSTOM CURSOR
@@ -15,7 +22,6 @@ let mouseX = window.innerWidth  / 2;
 let mouseY = window.innerHeight / 2;
 let glowX  = mouseX;
 let glowY  = mouseY;
-let rafId  = null;
 
 if (cursor && cursorGlow) {
   document.addEventListener('mousemove', (e) => {
@@ -32,7 +38,7 @@ if (cursor && cursorGlow) {
     glowY += (mouseY - glowY) * 0.12;
     cursorGlow.style.left = glowX + 'px';
     cursorGlow.style.top  = glowY + 'px';
-    rafId = requestAnimationFrame(animateGlow);
+    requestAnimationFrame(animateGlow);
   }
   animateGlow();
 
@@ -62,118 +68,337 @@ if (cursor && cursorGlow) {
 
 
 /* ----------------------------------------------------------------
-   2. HERO CANVAS — Particle Field
+   2. HERO CANVAS — Enhanced Particle Field
    ---------------------------------------------------------------- */
 
-const canvas = document.getElementById('heroCanvas');
-const ctx    = canvas ? canvas.getContext('2d') : null;
+const heroCanvas = document.getElementById('heroCanvas');
+const heroCtx    = heroCanvas ? heroCanvas.getContext('2d') : null;
 
-if (canvas && ctx) {
-  let W = canvas.width  = window.innerWidth;
-  let H = canvas.height = window.innerHeight;
+if (heroCanvas && heroCtx && !prefersReducedMotion) {
+  let W = heroCanvas.width  = window.innerWidth;
+  let H = heroCanvas.height = window.innerHeight;
 
-  const PARTICLE_COUNT = Math.min(Math.floor(W * H / 12000), 80);
-  const COLORS = ['rgba(0,240,255,', 'rgba(123,97,255,'];
+  // More particles for density; cap for performance
+  const PARTICLE_COUNT = Math.min(Math.floor((W * H) / 8000), 120);
+  const CONNECTION_DIST = 140;
+  const MOUSE_RADIUS = 180;
+  const MOUSE_FORCE = 0.08;
+
+  // Track mouse position within the hero
+  let heroMouseX = W / 2;
+  let heroMouseY = H / 2;
+  let mouseActive = false;
+
+  heroCanvas.addEventListener('mousemove', (e) => {
+    const rect = heroCanvas.getBoundingClientRect();
+    heroMouseX = e.clientX - rect.left;
+    heroMouseY = e.clientY - rect.top;
+    mouseActive = true;
+  });
+
+  heroCanvas.addEventListener('mouseleave', () => {
+    mouseActive = false;
+  });
 
   class Particle {
-    constructor() { this.reset(true); }
+    constructor() { this.init(true); }
 
-    reset(initial = false) {
-      this.x    = Math.random() * W;
-      this.y    = initial ? Math.random() * H : H + 10;
-      this.size = Math.random() * 1.5 + 0.5;
-      this.speedY = -(Math.random() * 0.4 + 0.1);
-      this.speedX =  (Math.random() - 0.5) * 0.2;
-      this.color  = COLORS[Math.floor(Math.random() * COLORS.length)];
-      this.alpha  = Math.random() * 0.5 + 0.1;
-      this.alphaDir = (Math.random() > 0.5) ? 0.003 : -0.003;
+    init(scatter = false) {
+      this.x  = Math.random() * W;
+      this.y  = scatter ? Math.random() * H : H + Math.random() * 40;
+      this.size = Math.random() * 2 + 0.5;
+
+      // Base velocity — slow ambient drift
+      this.baseVX = (Math.random() - 0.5) * 0.3;
+      this.baseVY = -(Math.random() * 0.5 + 0.1);
+
+      // Actual velocity (affected by mouse)
+      this.vx = this.baseVX;
+      this.vy = this.baseVY;
+
+      // Visual
+      this.hue = Math.random() > 0.35 ? 186 : 260; // cyan or violet
+      this.alpha = Math.random() * 0.5 + 0.15;
+      this.alphaTarget = this.alpha;
+      this.pulseSpeed = 0.002 + Math.random() * 0.004;
+      this.pulsePhase = Math.random() * Math.PI * 2;
     }
 
-    update() {
-      this.x += this.speedX;
-      this.y += this.speedY;
-      this.alpha += this.alphaDir;
-      if (this.alpha <= 0.05 || this.alpha >= 0.6) this.alphaDir *= -1;
-      if (this.y < -10) this.reset();
+    update(time) {
+      // Mouse reactivity — push particles away from cursor
+      if (mouseActive) {
+        const dx = this.x - heroMouseX;
+        const dy = this.y - heroMouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < MOUSE_RADIUS && dist > 0) {
+          const force = (1 - dist / MOUSE_RADIUS) * MOUSE_FORCE;
+          const angle = Math.atan2(dy, dx);
+          this.vx += Math.cos(angle) * force;
+          this.vy += Math.sin(angle) * force;
+        }
+      }
+
+      // Damping — return to base velocity over time
+      this.vx += (this.baseVX - this.vx) * 0.02;
+      this.vy += (this.baseVY - this.vy) * 0.02;
+
+      this.x += this.vx;
+      this.y += this.vy;
+
+      // Pulsing alpha
+      this.alpha = 0.15 + Math.sin(time * this.pulseSpeed + this.pulsePhase) * 0.25 + 0.15;
+
+      // Wrap horizontally, reset from bottom when off top
+      if (this.x < -20) this.x = W + 20;
+      if (this.x > W + 20) this.x = -20;
+      if (this.y < -20) this.init();
     }
 
-    draw() {
+    draw(ctx) {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = this.color + this.alpha + ')';
+      if (this.hue === 186) {
+        ctx.fillStyle = `rgba(0, 240, 255, ${this.alpha})`;
+      } else {
+        ctx.fillStyle = `rgba(123, 97, 255, ${this.alpha})`;
+      }
       ctx.fill();
     }
   }
 
   const particles = Array.from({ length: PARTICLE_COUNT }, () => new Particle());
 
-  // Subtle parallax on mousemove
-  let pMouseX = 0, pMouseY = 0;
-  window.addEventListener('mousemove', (e) => {
-    pMouseX = (e.clientX / W - 0.5) * 10;
-    pMouseY = (e.clientY / H - 0.5) * 10;
-  });
+  function drawHero(time) {
+    heroCtx.clearRect(0, 0, W, H);
 
-  function drawFrame() {
-    ctx.clearRect(0, 0, W, H);
+    // Update all particles
+    for (let i = 0; i < particles.length; i++) {
+      particles[i].update(time);
+    }
 
-    // Very faint connection lines
+    // Draw connection lines (batch by opacity for fewer state changes)
+    heroCtx.lineWidth = 0.5;
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) {
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(0,240,255,${0.04 * (1 - dist / 120)})`;
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
+        const distSq = dx * dx + dy * dy;
+        const maxSq = CONNECTION_DIST * CONNECTION_DIST;
+
+        if (distSq < maxSq) {
+          const dist = Math.sqrt(distSq);
+          const opacity = 0.08 * (1 - dist / CONNECTION_DIST);
+
+          // Lines near mouse glow brighter
+          let lineOpacity = opacity;
+          if (mouseActive) {
+            const midX = (particles[i].x + particles[j].x) / 2;
+            const midY = (particles[i].y + particles[j].y) / 2;
+            const mouseDist = Math.sqrt(
+              (midX - heroMouseX) ** 2 + (midY - heroMouseY) ** 2
+            );
+            if (mouseDist < MOUSE_RADIUS * 1.5) {
+              lineOpacity += 0.06 * (1 - mouseDist / (MOUSE_RADIUS * 1.5));
+            }
+          }
+
+          heroCtx.beginPath();
+          heroCtx.moveTo(particles[i].x, particles[i].y);
+          heroCtx.lineTo(particles[j].x, particles[j].y);
+          heroCtx.strokeStyle = `rgba(0, 240, 255, ${lineOpacity})`;
+          heroCtx.stroke();
         }
       }
     }
 
-    particles.forEach(p => { p.update(); p.draw(); });
-    requestAnimationFrame(drawFrame);
-  }
-  drawFrame();
+    // Draw particles on top
+    for (let i = 0; i < particles.length; i++) {
+      particles[i].draw(heroCtx);
+    }
 
-  // Resize
+    // Draw a subtle glow around the mouse position
+    if (mouseActive) {
+      const gradient = heroCtx.createRadialGradient(
+        heroMouseX, heroMouseY, 0,
+        heroMouseX, heroMouseY, MOUSE_RADIUS
+      );
+      gradient.addColorStop(0, 'rgba(0, 240, 255, 0.03)');
+      gradient.addColorStop(1, 'rgba(0, 240, 255, 0)');
+      heroCtx.fillStyle = gradient;
+      heroCtx.fillRect(0, 0, W, H);
+    }
+
+    requestAnimationFrame(drawHero);
+  }
+  requestAnimationFrame(drawHero);
+
+  // Throttled resize
+  let resizeTimeout;
   window.addEventListener('resize', () => {
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      W = heroCanvas.width  = window.innerWidth;
+      H = heroCanvas.height = window.innerHeight;
+    }, 150);
   });
 }
 
 
 /* ----------------------------------------------------------------
-   3. SCROLL REVEAL
+   3. ANIMATED GRID BACKGROUND
    ---------------------------------------------------------------- */
 
-const revealEls = document.querySelectorAll(
-  '.section-heading, .about-text, .about-stats, .skills-grid, .project-card, .contact-text, .contact-btn'
-);
+const gridCanvas = document.getElementById('gridCanvas');
+const gridCtx    = gridCanvas ? gridCanvas.getContext('2d') : null;
 
-revealEls.forEach(el => el.classList.add('reveal'));
+if (gridCanvas && gridCtx && !prefersReducedMotion) {
+  let GW = gridCanvas.width  = window.innerWidth;
+  let GH = gridCanvas.height = document.documentElement.scrollHeight;
 
-const revealObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        revealObserver.unobserve(entry.target);
+  const GRID_SIZE = 60;
+  const GRID_BASE_ALPHA = 0.025;
+  const GRID_PULSE_AMPLITUDE = 0.02;
+  const GRID_PULSE_SPEED = 0.0004; // Slow pulse cycle
+
+  function drawGrid(time) {
+    gridCtx.clearRect(0, 0, GW, GH);
+
+    // Pulsing global alpha
+    const pulse = GRID_BASE_ALPHA + Math.sin(time * GRID_PULSE_SPEED) * GRID_PULSE_AMPLITUDE;
+
+    // Draw vertical lines
+    gridCtx.strokeStyle = `rgba(0, 240, 255, ${pulse})`;
+    gridCtx.lineWidth = 1;
+
+    gridCtx.beginPath();
+    for (let x = 0; x <= GW; x += GRID_SIZE) {
+      gridCtx.moveTo(x + 0.5, 0);
+      gridCtx.lineTo(x + 0.5, GH);
+    }
+    gridCtx.stroke();
+
+    // Draw horizontal lines with a slightly different phase for depth
+    const pulse2 = GRID_BASE_ALPHA + Math.sin(time * GRID_PULSE_SPEED + 1.5) * GRID_PULSE_AMPLITUDE;
+    gridCtx.strokeStyle = `rgba(0, 240, 255, ${pulse2})`;
+
+    gridCtx.beginPath();
+    for (let y = 0; y <= GH; y += GRID_SIZE) {
+      gridCtx.moveTo(0, y + 0.5);
+      gridCtx.lineTo(GW, y + 0.5);
+    }
+    gridCtx.stroke();
+
+    // Intersection glow — very subtle bright dots at grid intersections near a slow-moving "wave"
+    const waveCenterY = (GH / 2) + Math.sin(time * 0.0003) * (GH * 0.3);
+    const waveCenterX = (GW / 2) + Math.cos(time * 0.0002) * (GW * 0.3);
+    const waveRadius = 400;
+
+    for (let x = 0; x <= GW; x += GRID_SIZE) {
+      for (let y = 0; y <= GH; y += GRID_SIZE) {
+        const dx = x - waveCenterX;
+        const dy = y - waveCenterY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < waveRadius) {
+          const intensity = (1 - dist / waveRadius) * 0.08;
+          gridCtx.fillStyle = `rgba(0, 240, 255, ${intensity})`;
+          gridCtx.fillRect(x - 1, y - 1, 2, 2);
+        }
       }
-    });
-  },
-  { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-);
+    }
 
-revealEls.forEach(el => revealObserver.observe(el));
+    requestAnimationFrame(drawGrid);
+  }
+  requestAnimationFrame(drawGrid);
+
+  // Update grid height on scroll/resize (page height can change)
+  let gridResizeTimeout;
+  function updateGridSize() {
+    clearTimeout(gridResizeTimeout);
+    gridResizeTimeout = setTimeout(() => {
+      GW = gridCanvas.width  = window.innerWidth;
+      GH = gridCanvas.height = document.documentElement.scrollHeight;
+    }, 200);
+  }
+  window.addEventListener('resize', updateGridSize);
+
+  // Observe body size changes (in case dynamic content changes page height)
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(updateGridSize).observe(document.body);
+  }
+}
 
 
 /* ----------------------------------------------------------------
-   4. STAT COUNTER ANIMATION
+   4. SCROLL REVEAL — Staggered Entrance Animations
+   ---------------------------------------------------------------- */
+
+// Define reveal groups: elements within each section animate in sequence
+const revealSections = [
+  {
+    selector: '#about',
+    children: ['.section-heading', '.about-text', '.about-stats']
+  },
+  {
+    selector: '#skills',
+    children: ['.section-heading', '.skills-grid .skill-tag']
+  },
+  {
+    selector: '#projects',
+    children: ['.section-heading', '.project-card']
+  },
+  {
+    selector: '#contact',
+    children: ['.section-heading', '.contact-text', '.contact-btn']
+  }
+];
+
+const STAGGER_BASE = 80; // ms between each element in a group
+const REVEAL_DURATION = 700; // ms
+
+if (!prefersReducedMotion) {
+  // Mark all revealable elements
+  revealSections.forEach(group => {
+    const section = document.querySelector(group.selector);
+    if (!section) return;
+
+    let index = 0;
+    group.children.forEach(childSel => {
+      const elements = section.querySelectorAll(childSel);
+      elements.forEach(el => {
+        el.classList.add('reveal');
+        el.style.transitionDelay = (index * STAGGER_BASE) + 'ms';
+        el.style.transitionDuration = REVEAL_DURATION + 'ms';
+        index++;
+      });
+    });
+  });
+
+  // Observe each section; when it enters, reveal all children at once (stagger via CSS delay)
+  const sectionObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+
+        const section = entry.target;
+        const revealEls = section.querySelectorAll('.reveal');
+        revealEls.forEach(el => el.classList.add('visible'));
+
+        sectionObserver.unobserve(section);
+      });
+    },
+    { threshold: 0.08, rootMargin: '0px 0px -60px 0px' }
+  );
+
+  revealSections.forEach(group => {
+    const section = document.querySelector(group.selector);
+    if (section) sectionObserver.observe(section);
+  });
+}
+
+
+/* ----------------------------------------------------------------
+   5. STAT COUNTER ANIMATION
    ---------------------------------------------------------------- */
 
 const statNumbers = document.querySelectorAll('.stat-number[data-target]');
@@ -190,7 +415,7 @@ const counterObserver = new IntersectionObserver(
       function tick(now) {
         const elapsed  = now - start;
         const progress = Math.min(elapsed / duration, 1);
-        // Ease out quad
+        // Ease out cubic
         const eased = 1 - Math.pow(1 - progress, 3);
         el.textContent = Math.round(eased * target);
         if (progress < 1) requestAnimationFrame(tick);
@@ -206,7 +431,7 @@ statNumbers.forEach(el => counterObserver.observe(el));
 
 
 /* ----------------------------------------------------------------
-   5. CARD GLOW — Mouse Tracking
+   6. CARD GLOW — Mouse Tracking
    ---------------------------------------------------------------- */
 
 document.querySelectorAll('.glass-card').forEach(card => {
@@ -221,7 +446,7 @@ document.querySelectorAll('.glass-card').forEach(card => {
 
 
 /* ----------------------------------------------------------------
-   6. SCROLL INDICATOR FADE
+   7. SCROLL INDICATOR FADE
    ---------------------------------------------------------------- */
 
 const scrollIndicator = document.getElementById('scrollIndicator');
