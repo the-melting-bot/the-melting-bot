@@ -578,14 +578,14 @@ document.querySelectorAll('.glass-card').forEach(card => {
       } else {
         if (statusEl) {
           statusEl.textContent =
-            'Something went wrong. Please try again or email jt@themeltingbot.com directly.';
+            'Something went wrong. Please try again in a moment.';
           statusEl.classList.add('is-error');
         }
       }
     } catch (err) {
       if (statusEl) {
         statusEl.textContent =
-          'Network error. Please try again or email jt@themeltingbot.com directly.';
+          'Network error. Please try again in a moment.';
         statusEl.classList.add('is-error');
       }
     } finally {
