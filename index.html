@@ -283,11 +283,53 @@
         Let's Build Something
       </h2>
       <p class="contact-text">Got a project in mind? Want to collaborate? Drop a line.</p>
-      <a href="mailto:jt@themeltingbot.com" class="contact-btn" target="_blank" rel="noopener noreferrer">
-        <span class="btn-glow-ring"></span>
-        <span class="btn-text">Get In Touch</span>
-        <span class="btn-arrow">&#8594;</span>
-      </a>
+
+      <form class="contact-form" id="contactForm" novalidate>
+        <p class="contact-form-note" id="contactFormNote">
+          Messages go to <strong>jt@themeltingbot.com</strong>
+        </p>
+
+        <div class="sr-only" aria-hidden="true">
+          <label for="contactWebsite">Website</label>
+          <input type="text" id="contactWebsite" name="botcheck" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <div class="contact-field">
+          <label for="contactName">Name <span class="contact-req" aria-hidden="true">*</span></label>
+          <input type="text" id="contactName" name="name" required maxlength="120" autocomplete="name" placeholder="Your name" />
+          <span class="contact-field-error" id="contactErrName" role="alert"></span>
+        </div>
+
+        <div class="contact-field">
+          <label for="contactEmail">Email <span class="contact-req" aria-hidden="true">*</span></label>
+          <input type="email" id="contactEmail" name="email" required maxlength="254" autocomplete="email" placeholder="you@example.com" />
+          <span class="contact-field-error" id="contactErrEmail" role="alert"></span>
+        </div>
+
+        <div class="contact-field">
+          <label for="contactTopic">Topic</label>
+          <select id="contactTopic" name="topic">
+            <option value="Project inquiry">Project inquiry</option>
+            <option value="Collaboration">Collaboration</option>
+            <option value="General">General</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="contact-field">
+          <label for="contactMessage">Message <span class="contact-req" aria-hidden="true">*</span></label>
+          <textarea id="contactMessage" name="message" required rows="5" maxlength="5000" placeholder="Tell us what you’re looking for…"></textarea>
+          <span class="contact-field-error" id="contactErrMessage" role="alert"></span>
+        </div>
+
+        <p class="contact-form-status" id="contactFormStatus" role="status" aria-live="polite"></p>
+
+        <button type="submit" class="contact-btn contact-form__submit" id="contactSubmit">
+          <span class="btn-glow-ring"></span>
+          <span class="btn-text">Send message</span>
+          <span class="btn-arrow">&#8594;</span>
+        </button>
+      </form>
     </div>
   </section>
 

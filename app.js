@@ -85,7 +85,7 @@ if (cursor && cursorGlow) {
   animateGlow();
 
   // Hover state
-  const interactiveSelectors = 'a, button, [role="button"], .skill-tag, .glass-card, .contact-btn, .tmb-badge';
+  const interactiveSelectors = 'a, button, [role="button"], .skill-tag, .glass-card, .contact-btn, .tmb-badge, #contact input, #contact textarea, #contact select';
   document.querySelectorAll(interactiveSelectors).forEach(el => {
     el.addEventListener('mouseenter', () => {
       cursor.classList.add('hovering');
@@ -391,7 +391,7 @@ const revealSections = [
   },
   {
     selector: '#contact',
-    children: ['.section-heading', '.contact-text', '.contact-btn']
+    children: ['.section-heading', '.contact-text', '.contact-form']
   }
 ];
 
@@ -485,6 +485,114 @@ document.querySelectorAll('.glass-card').forEach(card => {
     card.style.setProperty('--mouse-y', y + '%');
   });
 });
+
+
+/* ----------------------------------------------------------------
+   6.5 CONTACT FORM — Web3Forms (same access key as whatsmybaseworth)
+   ---------------------------------------------------------------- */
+
+(function initContactForm() {
+  const form = document.getElementById('contactForm');
+  if (!form) return;
+
+  const WEB3FORMS_ACCESS_KEY = '0cf4a704-6a32-48eb-87ec-467ae5be13f5';
+  const statusEl = document.getElementById('contactFormStatus');
+  const submitBtn = document.getElementById('contactSubmit');
+  const errName = document.getElementById('contactErrName');
+  const errEmail = document.getElementById('contactErrEmail');
+  const errMessage = document.getElementById('contactErrMessage');
+
+  function clearErrors() {
+    if (errName) errName.textContent = '';
+    if (errEmail) errEmail.textContent = '';
+    if (errMessage) errMessage.textContent = '';
+  }
+
+  function validateEmail(s) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    clearErrors();
+    if (statusEl) {
+      statusEl.textContent = '';
+      statusEl.classList.remove('is-success', 'is-error');
+    }
+
+    const nameInput = form.querySelector('[name="name"]');
+    const emailInput = form.querySelector('[name="email"]');
+    const topicInput = form.querySelector('[name="topic"]');
+    const messageInput = form.querySelector('[name="message"]');
+    const honeypot = form.querySelector('[name="botcheck"]');
+
+    const n = (nameInput && nameInput.value ? nameInput.value : '').trim();
+    const em = (emailInput && emailInput.value ? emailInput.value : '').trim();
+    const topic = topicInput && topicInput.value ? topicInput.value : 'General';
+    const msg = (messageInput && messageInput.value ? messageInput.value : '').trim();
+
+    if (honeypot && honeypot.value) return;
+
+    let ok = true;
+    if (!n) {
+      if (errName) errName.textContent = 'Name is required';
+      ok = false;
+    }
+    if (!em) {
+      if (errEmail) errEmail.textContent = 'Email is required';
+      ok = false;
+    } else if (!validateEmail(em)) {
+      if (errEmail) errEmail.textContent = 'Enter a valid email';
+      ok = false;
+    }
+    if (!msg) {
+      if (errMessage) errMessage.textContent = 'Message is required';
+      ok = false;
+    }
+    if (!ok) return;
+
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_ACCESS_KEY,
+          subject: '[themeltingbot.com] ' + topic + ' — ' + n,
+          from_name: 'The Melting Bot — Portfolio',
+          name: n,
+          email: em,
+          topic: topic,
+          message: msg,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (statusEl) {
+          statusEl.textContent =
+            'Thanks — your message was sent. We\'ll get back to you soon.';
+          statusEl.classList.add('is-success');
+        }
+        form.reset();
+      } else {
+        if (statusEl) {
+          statusEl.textContent =
+            'Something went wrong. Please try again or email jt@themeltingbot.com directly.';
+          statusEl.classList.add('is-error');
+        }
+      }
+    } catch (err) {
+      if (statusEl) {
+        statusEl.textContent =
+          'Network error. Please try again or email jt@themeltingbot.com directly.';
+        statusEl.classList.add('is-error');
+      }
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
+})();
 
 
 /* ----------------------------------------------------------------
