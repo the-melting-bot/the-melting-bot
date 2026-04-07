@@ -445,11 +445,17 @@ if (!prefersReducedMotion) {
 
 const METRICS_CMD = 'cat ~/.meltingbot/metrics.json';
 
+/** Typing / reveal pacing — slower so the animation reads clearly */
+const TERMINAL_TYPE_MS = 58;
+const TERMINAL_AFTER_CMD_MS = 480;
+const TERMINAL_LINE_STAGGER_MS = 165;
+const TERMINAL_COUNT_DURATION_MS = 1700;
+
 function animateStatNumber(el) {
   if (!el || !el.dataset.target || el.dataset.counted === 'true') return;
   el.dataset.counted = 'true';
   const target = parseInt(el.dataset.target, 10);
-  const duration = 1200;
+  const duration = TERMINAL_COUNT_DURATION_MS;
   const start = performance.now();
 
   function tick(now) {
@@ -476,7 +482,7 @@ function animateStatNumber(el) {
     const line = lines[index];
     line.removeAttribute('hidden');
     line.querySelectorAll('.stat-number[data-target]').forEach(animateStatNumber);
-    const delay = prefersReducedMotion ? 0 : 95;
+    const delay = prefersReducedMotion ? 0 : TERMINAL_LINE_STAGGER_MS;
     setTimeout(() => revealJsonLines(index + 1), delay);
   }
 
@@ -499,13 +505,13 @@ function animateStatNumber(el) {
       if (i < METRICS_CMD.length) {
         cmdEl.textContent += METRICS_CMD[i];
         i += 1;
-        setTimeout(typeChar, 26);
+        setTimeout(typeChar, TERMINAL_TYPE_MS);
       } else {
         if (cursorEl) cursorEl.classList.add('is-hidden');
         setTimeout(() => {
           jsonWrap.removeAttribute('hidden');
           revealJsonLines(0);
-        }, 220);
+        }, TERMINAL_AFTER_CMD_MS);
       }
     }
     typeChar();
