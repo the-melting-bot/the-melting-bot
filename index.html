@@ -125,18 +125,27 @@
           <p>We are a creative studio obsessed with building things that feel alive. Part developer, part designer, part mad scientist — we melt the boundaries between code and art.</p>
           <p>Every project starts with a blank canvas and ends with something that makes people stop scrolling.</p>
         </div>
-        <div class="about-stats">
-          <div class="stat-item">
-            <span class="stat-number" data-target="15">0</span>
-            <span class="stat-label">Projects Shipped</span>
+        <div class="about-terminal" id="metricsTerminal" aria-label="Studio metrics">
+          <div class="about-terminal__chrome">
+            <span class="about-terminal__dots" aria-hidden="true">
+              <span class="about-terminal__dot"></span>
+              <span class="about-terminal__dot"></span>
+              <span class="about-terminal__dot"></span>
+            </span>
+            <span class="about-terminal__filename">~/.meltingbot/metrics.json</span>
           </div>
-          <div class="stat-item">
-            <span class="stat-number" data-target="3">0</span>
-            <span class="stat-label">Years Building</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number-row"><span class="stat-number" data-target="100">0</span><span class="stat-suffix">%</span></span>
-            <span class="stat-label">Dark Mode</span>
+          <div class="about-terminal__body">
+            <p class="about-terminal__cmd">
+              <span class="about-terminal__prompt">$</span>
+              <span id="terminalCmdText"></span><span class="about-terminal__cursor" id="terminalCursor" aria-hidden="true">▊</span>
+            </p>
+            <div class="about-terminal__json" id="terminalJsonLines" hidden>
+              <div class="about-terminal__line" hidden>{</div>
+              <div class="about-terminal__line" hidden>  <span class="json-key">"projects_shipped"</span><span class="json-punct">: </span><span class="stat-number" data-target="15">0</span><span class="json-punct">,</span></div>
+              <div class="about-terminal__line" hidden>  <span class="json-key">"years_building"</span><span class="json-punct">: </span><span class="stat-number" data-target="3">0</span><span class="json-punct">,</span></div>
+              <div class="about-terminal__line" hidden>  <span class="json-key">"dark_mode"</span><span class="json-punct">: </span><span class="json-string">"</span><span class="stat-number" data-target="100">0</span><span class="json-string">%"</span></div>
+              <div class="about-terminal__line" hidden>}</div>
+            </div>
           </div>
         </div>
       </div>

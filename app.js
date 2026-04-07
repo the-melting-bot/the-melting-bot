@@ -85,7 +85,7 @@ if (cursor && cursorGlow) {
   animateGlow();
 
   // Hover state
-  const interactiveSelectors = 'a, button, [role="button"], .skill-tag, .glass-card, .contact-btn, .tmb-badge, #contact input, #contact textarea, #contact select';
+  const interactiveSelectors = 'a, button, [role="button"], .skill-tag, .glass-card, .about-terminal, .contact-btn, .tmb-badge, #contact input, #contact textarea, #contact select';
   document.querySelectorAll(interactiveSelectors).forEach(el => {
     el.addEventListener('mouseenter', () => {
       cursor.classList.add('hovering');
@@ -379,7 +379,7 @@ if (gridCanvas && gridCtx && !prefersReducedMotion) {
 const revealSections = [
   {
     selector: '#about',
-    children: ['.section-heading', '.about-text', '.about-stats']
+    children: ['.section-heading', '.about-text', '.about-terminal']
   },
   {
     selector: '#skills',
@@ -440,36 +440,96 @@ if (!prefersReducedMotion) {
 
 
 /* ----------------------------------------------------------------
-   5. STAT COUNTER ANIMATION
+   5. METRICS TERMINAL — type command, reveal JSON, count up numbers
    ---------------------------------------------------------------- */
 
-const statNumbers = document.querySelectorAll('.stat-number[data-target]');
+const METRICS_CMD = 'cat ~/.meltingbot/metrics.json';
 
-const counterObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const el     = entry.target;
-      const target = parseInt(el.dataset.target, 10);
-      const duration = 1200;
-      const start    = performance.now();
+function animateStatNumber(el) {
+  if (!el || !el.dataset.target || el.dataset.counted === 'true') return;
+  el.dataset.counted = 'true';
+  const target = parseInt(el.dataset.target, 10);
+  const duration = 1200;
+  const start = performance.now();
 
-      function tick(now) {
-        const elapsed  = now - start;
-        const progress = Math.min(elapsed / duration, 1);
-        // Ease out cubic
-        const eased = 1 - Math.pow(1 - progress, 3);
-        el.textContent = Math.round(eased * target);
-        if (progress < 1) requestAnimationFrame(tick);
+  function tick(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = String(Math.round(eased * target));
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+(function initMetricsTerminal() {
+  const root = document.getElementById('metricsTerminal');
+  const cmdEl = document.getElementById('terminalCmdText');
+  const cursorEl = document.getElementById('terminalCursor');
+  const jsonWrap = document.getElementById('terminalJsonLines');
+  if (!root || !cmdEl || !jsonWrap) return;
+
+  const lines = Array.from(jsonWrap.querySelectorAll('.about-terminal__line'));
+
+  function revealJsonLines(index) {
+    if (index >= lines.length) return;
+    const line = lines[index];
+    line.removeAttribute('hidden');
+    line.querySelectorAll('.stat-number[data-target]').forEach(animateStatNumber);
+    const delay = prefersReducedMotion ? 0 : 95;
+    setTimeout(() => revealJsonLines(index + 1), delay);
+  }
+
+  function runSequence() {
+    if (prefersReducedMotion) {
+      cmdEl.textContent = METRICS_CMD;
+      if (cursorEl) cursorEl.classList.add('is-hidden');
+      jsonWrap.removeAttribute('hidden');
+      lines.forEach((line) => {
+        line.removeAttribute('hidden');
+      });
+      lines.forEach((line) => {
+        line.querySelectorAll('.stat-number[data-target]').forEach(animateStatNumber);
+      });
+      return;
+    }
+
+    let i = 0;
+    function typeChar() {
+      if (i < METRICS_CMD.length) {
+        cmdEl.textContent += METRICS_CMD[i];
+        i += 1;
+        setTimeout(typeChar, 26);
+      } else {
+        if (cursorEl) cursorEl.classList.add('is-hidden');
+        setTimeout(() => {
+          jsonWrap.removeAttribute('hidden');
+          revealJsonLines(0);
+        }, 220);
       }
-      requestAnimationFrame(tick);
-      counterObserver.unobserve(el);
-    });
-  },
-  { threshold: 0.5 }
-);
+    }
+    typeChar();
+  }
 
-statNumbers.forEach(el => counterObserver.observe(el));
+  let started = false;
+  function startOnce() {
+    if (started) return;
+    started = true;
+    runSequence();
+  }
+
+  const termObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        termObserver.unobserve(entry.target);
+        startOnce();
+      });
+    },
+    { threshold: 0.35, rootMargin: '0px 0px -40px 0px' }
+  );
+  termObserver.observe(root);
+})();
 
 
 /* ----------------------------------------------------------------
