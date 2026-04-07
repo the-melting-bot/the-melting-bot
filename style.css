@@ -371,6 +371,11 @@ body.loading .hero-scroll-indicator {
   margin-bottom: var(--space-4);
 }
 
+.about-text em {
+  color: var(--color-text);
+  font-style: italic;
+}
+
 /* Metrics terminal — JSON snapshot */
 .about-terminal {
   background: var(--color-bg);
@@ -427,10 +432,23 @@ body.loading .hero-scroll-indicator {
   line-height: 1.65;
 }
 
+.about-terminal__cmd-area {
+  margin-bottom: var(--space-3);
+  min-height: 5rem;
+}
+
 .about-terminal__cmd {
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--space-1);
   color: var(--color-text);
-  min-height: 1.65em;
+  min-height: 1.5em;
+}
+
+.about-terminal__stdout {
+  margin: 0 0 var(--space-2);
+  padding-left: 0.25rem;
+  color: rgba(110, 231, 183, 0.55);
+  font-size: 0.92em;
+  line-height: 1.5;
 }
 
 .about-terminal__prompt {
@@ -456,7 +474,7 @@ body.loading .hero-scroll-indicator {
 }
 
 .about-terminal__json {
-  margin: 0;
+  margin: var(--space-2) 0 0;
   overflow-x: auto;
 }
 

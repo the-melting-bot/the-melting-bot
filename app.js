@@ -440,16 +440,85 @@ if (!prefersReducedMotion) {
 
 
 /* ----------------------------------------------------------------
-   5. METRICS TERMINAL — type command, reveal JSON, count up numbers
+   5. METRICS TERMINAL — cd / ls / cat session, then JSON + count up
    ---------------------------------------------------------------- */
 
-const METRICS_CMD = 'cat ~/.meltingbot/metrics.json';
+const CMD_CD = 'cd ~/.meltingbot';
+const CMD_LS = 'ls -1 metrics.json';
+const CMD_CAT = 'cat ~/.meltingbot/metrics.json';
 
-/** Typing / reveal pacing — slower so the animation reads clearly */
-const TERMINAL_TYPE_MS = 58;
-const TERMINAL_AFTER_CMD_MS = 480;
+/** First two commands + stdout pacing; `cat` is slowest on purpose */
+const TERMINAL_TYPE_CMD1_MS = 78;
+const TERMINAL_TYPE_CMD2_MS = 64;
+const TERMINAL_TYPE_CAT_MS = 96;
+const TERMINAL_AFTER_STDOUT_MS = 300;
+const TERMINAL_BETWEEN_CMD_MS = 240;
+const TERMINAL_AFTER_CAT_MS = 540;
 const TERMINAL_LINE_STAGGER_MS = 165;
 const TERMINAL_COUNT_DURATION_MS = 1700;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function typeCommand(textEl, cursorEl, text, msPerChar) {
+  return new Promise((resolve) => {
+    let i = 0;
+    function tick() {
+      if (i < text.length) {
+        textEl.textContent += text[i];
+        i += 1;
+        setTimeout(tick, msPerChar);
+      } else {
+        if (cursorEl) cursorEl.classList.add('is-hidden');
+        resolve();
+      }
+    }
+    tick();
+  });
+}
+
+function createCommandRow(container) {
+  const p = document.createElement('p');
+  p.className = 'about-terminal__cmd';
+  const prompt = document.createElement('span');
+  prompt.className = 'about-terminal__prompt';
+  prompt.textContent = '$';
+  const textSpan = document.createElement('span');
+  textSpan.className = 'about-terminal__cmd-text';
+  const cursor = document.createElement('span');
+  cursor.className = 'about-terminal__cursor';
+  cursor.setAttribute('aria-hidden', 'true');
+  cursor.textContent = '▊';
+  p.appendChild(prompt);
+  p.appendChild(document.createTextNode(' '));
+  p.appendChild(textSpan);
+  p.appendChild(cursor);
+  container.appendChild(p);
+  return { text: textSpan, cursor };
+}
+
+function appendStdout(container, text) {
+  const p = document.createElement('p');
+  p.className = 'about-terminal__stdout';
+  p.textContent = text;
+  container.appendChild(p);
+}
+
+function fillStaticCmdArea(container) {
+  container.textContent = '';
+  let r = createCommandRow(container);
+  r.text.textContent = CMD_CD;
+  r.cursor.classList.add('is-hidden');
+  appendStdout(container, '~/.meltingbot');
+  r = createCommandRow(container);
+  r.text.textContent = CMD_LS;
+  r.cursor.classList.add('is-hidden');
+  appendStdout(container, 'metrics.json');
+  r = createCommandRow(container);
+  r.text.textContent = CMD_CAT;
+  r.cursor.classList.add('is-hidden');
+}
 
 function animateStatNumber(el) {
   if (!el || !el.dataset.target || el.dataset.counted === 'true') return;
@@ -470,10 +539,9 @@ function animateStatNumber(el) {
 
 (function initMetricsTerminal() {
   const root = document.getElementById('metricsTerminal');
-  const cmdEl = document.getElementById('terminalCmdText');
-  const cursorEl = document.getElementById('terminalCursor');
+  const cmdArea = document.getElementById('terminalCmdArea');
   const jsonWrap = document.getElementById('terminalJsonLines');
-  if (!root || !cmdEl || !jsonWrap) return;
+  if (!root || !cmdArea || !jsonWrap) return;
 
   const lines = Array.from(jsonWrap.querySelectorAll('.about-terminal__line'));
 
@@ -486,41 +554,48 @@ function animateStatNumber(el) {
     setTimeout(() => revealJsonLines(index + 1), delay);
   }
 
-  function runSequence() {
-    if (prefersReducedMotion) {
-      cmdEl.textContent = METRICS_CMD;
-      if (cursorEl) cursorEl.classList.add('is-hidden');
-      jsonWrap.removeAttribute('hidden');
-      lines.forEach((line) => {
-        line.removeAttribute('hidden');
-      });
-      lines.forEach((line) => {
-        line.querySelectorAll('.stat-number[data-target]').forEach(animateStatNumber);
-      });
-      return;
-    }
+  async function runSequence() {
+    cmdArea.textContent = '';
 
-    let i = 0;
-    function typeChar() {
-      if (i < METRICS_CMD.length) {
-        cmdEl.textContent += METRICS_CMD[i];
-        i += 1;
-        setTimeout(typeChar, TERMINAL_TYPE_MS);
-      } else {
-        if (cursorEl) cursorEl.classList.add('is-hidden');
-        setTimeout(() => {
-          jsonWrap.removeAttribute('hidden');
-          revealJsonLines(0);
-        }, TERMINAL_AFTER_CMD_MS);
-      }
-    }
-    typeChar();
+    let row = createCommandRow(cmdArea);
+    await typeCommand(row.text, row.cursor, CMD_CD, TERMINAL_TYPE_CMD1_MS);
+    await sleep(TERMINAL_AFTER_STDOUT_MS);
+    appendStdout(cmdArea, '~/.meltingbot');
+    await sleep(TERMINAL_BETWEEN_CMD_MS);
+
+    row = createCommandRow(cmdArea);
+    await typeCommand(row.text, row.cursor, CMD_LS, TERMINAL_TYPE_CMD2_MS);
+    await sleep(TERMINAL_AFTER_STDOUT_MS);
+    appendStdout(cmdArea, 'metrics.json');
+    await sleep(TERMINAL_BETWEEN_CMD_MS);
+
+    row = createCommandRow(cmdArea);
+    await typeCommand(row.text, row.cursor, CMD_CAT, TERMINAL_TYPE_CAT_MS);
+    await sleep(TERMINAL_AFTER_CAT_MS);
+
+    jsonWrap.removeAttribute('hidden');
+    revealJsonLines(0);
+  }
+
+  function runReducedMotion() {
+    fillStaticCmdArea(cmdArea);
+    jsonWrap.removeAttribute('hidden');
+    lines.forEach((line) => {
+      line.removeAttribute('hidden');
+    });
+    lines.forEach((line) => {
+      line.querySelectorAll('.stat-number[data-target]').forEach(animateStatNumber);
+    });
   }
 
   let started = false;
   function startOnce() {
     if (started) return;
     started = true;
+    if (prefersReducedMotion) {
+      runReducedMotion();
+      return;
+    }
     runSequence();
   }
 
