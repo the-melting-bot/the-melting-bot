@@ -20,13 +20,13 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
   const video = document.getElementById('loaderVideo');
   if (!loader || !video) return;
 
-  // Check localStorage for session-like behavior (expire after 4 hours)
-  const sessionKey = 'loaderPlayedTimestamp';
-  const now = Date.now();
-  const lastPlayed = localStorage.getItem(sessionKey);
-  const isPlayed = lastPlayed && (now - parseInt(lastPlayed, 10)) < 4 * 60 * 60 * 1000;
+  // Force scroll to top on refresh
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+  window.scrollTo(0, 0);
 
-  if (prefersReducedMotion || isPlayed) {
+  if (prefersReducedMotion) {
     // Skip animation, just remove immediately
     loader.style.display = 'none';
     return;
@@ -49,7 +49,6 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
   function removeLoader() {
     loader.classList.add('fade-out');
     document.body.classList.remove('loading');
-    localStorage.setItem(sessionKey, now.toString());
 
     // Remove from DOM after 1-second cross-fade (matches CSS transition)
     setTimeout(() => {
