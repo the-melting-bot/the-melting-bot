@@ -131,7 +131,7 @@
   background: var(--color-primary);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 10003;
   transform: translate(-50%, -50%);
   transition: width 150ms ease, height 150ms ease, background 150ms ease;
   mix-blend-mode: screen;
@@ -144,7 +144,7 @@
   background: radial-gradient(circle, rgba(0, 240, 255, 0.15) 0%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 9998;
+  z-index: 10002;
   transform: translate(-50%, -50%);
   transition: width 300ms ease, height 300ms ease;
 }
