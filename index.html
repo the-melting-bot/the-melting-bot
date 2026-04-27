@@ -52,26 +52,7 @@
        LOADING SCREEN — Intro Animation
        ============================================================ -->
   <div class="loader" id="loader" aria-hidden="true">
-    <div class="loader-bot" id="loaderBot">
-      <svg viewBox="0 0 80 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="loader-bot-svg">
-        <!-- Antenna -->
-        <line x1="40" y1="10" x2="40" y2="2" stroke="#7B61FF" stroke-width="2.5" stroke-linecap="round"/>
-        <circle cx="40" cy="2" r="2.5" fill="#7B61FF"/>
-        <!-- Head -->
-        <rect x="12" y="10" width="56" height="44" rx="10" stroke="#00F0FF" stroke-width="2.5" fill="none"/>
-        <!-- Eyes -->
-        <circle cx="28" cy="30" r="6" fill="#00F0FF"/>
-        <circle cx="52" cy="30" r="6" fill="#00F0FF"/>
-        <circle cx="28" cy="30" r="2.5" fill="#0D0D0D"/>
-        <circle cx="52" cy="30" r="2.5" fill="#0D0D0D"/>
-        <!-- Mouth -->
-        <path d="M24 42 Q40 50 56 42" stroke="#00F0FF" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <!-- Drips (these will animate) -->
-        <path class="loader-drip loader-drip-1" d="M20 54 L20 68 Q20 74 26 74 Q32 74 32 68 L32 60" stroke="#7B61FF" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <path class="loader-drip loader-drip-2" d="M36 54 L36 78 Q36 84 42 84 Q48 84 48 78 L48 66" stroke="#00F0FF" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
-        <path class="loader-drip loader-drip-3" d="M52 54 L52 72 Q52 78 58 78" stroke="#7B61FF" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
-      </svg>
-    </div>
+    <video id="loaderVideo" class="loader-video" src="./public/hero-intro.mp4" playsinline muted></video>
   </div>
 
   <!-- Custom cursor -->

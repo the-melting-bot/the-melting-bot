@@ -73,7 +73,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .loader.fade-out {
@@ -81,64 +81,10 @@
   pointer-events: none;
 }
 
-.loader-bot {
-  width: 80px;
-  height: 100px;
-  opacity: 0;
-  animation: loaderFadeIn 0.6s ease-out 0.2s forwards;
-}
-
-.loader-bot-svg {
+.loader-video {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.3));
-}
-
-/* Bot fades in, then melts downward and dissolves */
-@keyframes loaderFadeIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.loader-bot.melting {
-  animation: loaderMelt 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes loaderMelt {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scaleY(1) scaleX(1);
-    filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.3));
-  }
-  30% {
-    opacity: 1;
-    transform: translateY(10px) scaleY(1.08) scaleX(0.96);
-    filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.4));
-  }
-  60% {
-    opacity: 0.7;
-    transform: translateY(40px) scaleY(1.3) scaleX(0.8);
-    filter: drop-shadow(0 0 40px rgba(0, 240, 255, 0.2)) blur(1px);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(80px) scaleY(1.6) scaleX(0.4);
-    filter: drop-shadow(0 0 0px rgba(0, 240, 255, 0)) blur(4px);
-  }
-}
-
-/* Drips in the loader animate independently */
-.loader-drip {
-  stroke-dasharray: 60;
-  stroke-dashoffset: 60;
-  animation: loaderDripDraw 0.8s ease-out 0.5s forwards;
-}
-
-.loader-drip-2 { animation-delay: 0.65s; }
-.loader-drip-3 { animation-delay: 0.8s; }
-
-@keyframes loaderDripDraw {
-  to { stroke-dashoffset: 0; }
+  object-fit: cover;
 }
 
 

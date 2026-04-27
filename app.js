@@ -16,40 +16,46 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
    ---------------------------------------------------------------- */
 
 (function initLoader() {
-  const loader  = document.getElementById('loader');
-  const bot     = document.getElementById('loaderBot');
-  if (!loader || !bot) return;
+  const loader = document.getElementById('loader');
+  const video = document.getElementById('loaderVideo');
+  if (!loader || !video) return;
+
+  // Check localStorage for session-like behavior (expire after 4 hours)
+  const sessionKey = 'loaderPlayedTimestamp';
+  const now = Date.now();
+  const lastPlayed = localStorage.getItem(sessionKey);
+  const isPlayed = lastPlayed && (now - parseInt(lastPlayed, 10)) < 4 * 60 * 60 * 1000;
+
+  if (prefersReducedMotion || isPlayed) {
+    // Skip animation, just remove immediately
+    loader.style.display = 'none';
+    return;
+  }
 
   // Add loading class to body to pause hero animations
   document.body.classList.add('loading');
 
-  if (prefersReducedMotion) {
-    // Skip animation, just remove immediately
-    loader.style.display = 'none';
-    document.body.classList.remove('loading');
-    return;
-  }
+  // Play the video
+  video.play().catch(e => {
+    // If autoplay fails, fallback to removing loader
+    console.warn('Autoplay prevented', e);
+    removeLoader();
+  });
 
-  // Timeline:
-  // 0.0s - 0.8s : Bot fades in (CSS animation: loaderFadeIn, 0.2s delay + 0.6s)
-  // 0.5s - 1.3s : Drips draw in (CSS animation: loaderDripDraw)
-  // 1.4s        : Start melt animation
-  // 1.4s - 2.6s : Bot melts/dissolves (CSS animation: loaderMelt, 1.2s)
-  // 2.6s - 3.2s : Loader fades out (CSS transition: 0.6s)
+  video.addEventListener('ended', () => {
+    removeLoader();
+  });
 
-  setTimeout(() => {
-    bot.classList.add('melting');
-  }, 1400);
-
-  setTimeout(() => {
+  function removeLoader() {
     loader.classList.add('fade-out');
     document.body.classList.remove('loading');
-  }, 2500);
+    localStorage.setItem(sessionKey, now.toString());
 
-  // Remove loader from DOM after fade completes
-  setTimeout(() => {
-    loader.style.display = 'none';
-  }, 3200);
+    // Remove from DOM after 1-second cross-fade (matches CSS transition)
+    setTimeout(() => {
+      loader.style.display = 'none';
+    }, 1000);
+  }
 })();
 
 
