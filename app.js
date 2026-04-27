@@ -35,6 +35,24 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
   // Add loading class to body to pause hero animations
   document.body.classList.add('loading');
 
+  // Mute toggle logic
+  const muteBtn = document.getElementById('muteToggle');
+  const iconMuted = document.getElementById('iconMuted');
+  const iconUnmuted = document.getElementById('iconUnmuted');
+  
+  if (muteBtn && iconMuted && iconUnmuted) {
+    muteBtn.addEventListener('click', () => {
+      video.muted = !video.muted;
+      if (video.muted) {
+        iconMuted.style.display = 'block';
+        iconUnmuted.style.display = 'none';
+      } else {
+        iconMuted.style.display = 'none';
+        iconUnmuted.style.display = 'block';
+      }
+    });
+  }
+
   // Play the video
   video.play().catch(e => {
     // If autoplay fails, fallback to removing loader
